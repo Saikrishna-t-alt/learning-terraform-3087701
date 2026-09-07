@@ -45,17 +45,23 @@ module "sk_sg" {
 
 module "sk_autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "6.5.2"
+  version = "8.3.1"
 
   name = "sk"
 
   min_size            = 1
   max_size            = 2
+  desired_capacity    = 1
   vpc_zone_identifier = module.sk_vpc.public_subnets
-  target_group_arns   = module.sk_alb.target_group_arns
-  security_groups     = [module.sk_sg.security_group_id]
-  instance_type       = var.instance_type
-  image_id            = data.aws_ami.app_ami.id
+
+  security_groups = [module.sk_sg.security_group_id]
+  instance_type   = var.instance_type
+  image_id        = data.aws_ami.app_ami.id
+}
+
+resource "aws_autoscaling_attachment" "sk_alb" {
+  autoscaling_group_name = module.sk_autoscaling.autoscaling_group_name
+  lb_target_group_arn    = module.sk_alb.target_group_arns[0]
 }
 
 module "sk_alb" {
