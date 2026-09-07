@@ -17,6 +17,7 @@ data "aws_ami" "app_ami" {
 
 module "sk_vpc" {
   source = "terraform-aws-modules/vpc/aws"
+  version = "5.21.0"
 
   name = "dev"
   cidr = "10.0.0.0/16"
@@ -66,7 +67,7 @@ resource "aws_autoscaling_attachment" "sk_alb" {
 
 module "sk_alb" {
   source  = "terraform-aws-modules/alb/aws"
-  version = "~> 6.0"
+  version = "6.10.0"
 
   name = "sk-alb"
 
