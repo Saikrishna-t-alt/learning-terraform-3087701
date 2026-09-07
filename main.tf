@@ -50,8 +50,8 @@ module "sk_autoscaling" {
 
   name = "sk"
 
-  min_size            = 1
-  max_size            = 2
+  min_size            = 2
+  max_size            = 10
   desired_capacity    = 1
   vpc_zone_identifier = module.sk_vpc.public_subnets
 
