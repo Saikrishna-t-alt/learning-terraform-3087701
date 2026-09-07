@@ -45,7 +45,7 @@ module "sk_sg" {
 
 module "sk_autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 8.0"
+  version = "6.5.2"
 
   name = "sk"
 
@@ -56,6 +56,12 @@ module "sk_autoscaling" {
   security_groups     = [module.sk_sg.security_group_id]
   instance_type       = var.instance_type
   image_id            = data.aws_ami.app_ami.id
+
+  traffic_source_attachments={
+    sk-alb = {
+      traffic_source_identifier = aws_lb_target_group.sk.arn
+    }
+  }
 }
 
 module "sk_alb" {
