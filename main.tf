@@ -11,7 +11,7 @@ data "aws_ami" "app_ami" {
     values = ["hvm"]
   }
 
-  owners = ["amazon"] # Bitnami
+  owners = ["amazon"]
 }
 
 resource "aws_instance" "sk" {
