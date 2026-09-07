@@ -52,7 +52,7 @@ module "sk_autoscaling" {
 
   min_size            = 2
   max_size            = 10
-  desired_capacity    = 1
+  desired_capacity    = 2
   vpc_zone_identifier = module.sk_vpc.public_subnets
 
   security_groups = [module.sk_sg.security_group_id]
