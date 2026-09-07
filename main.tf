@@ -45,7 +45,7 @@ module "sk_sg" {
 
 module "sk_autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "6.5.2"
+  version = "~> 8.0"
 
   name = "sk"
 
