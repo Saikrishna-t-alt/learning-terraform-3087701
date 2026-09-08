@@ -16,85 +16,94 @@ data "aws_ami" "app_ami" {
 
 
 module "sk_vpc" {
-  source = "terraform-aws-modules/vpc/aws"
+  source  = "terraform-aws-modules/vpc/aws"
   version = "5.21.0"
 
-  name = "dev"
+  name = "sk-iam-vpc"
   cidr = "10.0.0.0/16"
 
-  azs             = ["ap-south-1a","ap-south-1b","ap-south-1c"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+  azs = [
+    "ap-south-1a",
+    "ap-south-1b",
+    "ap-south-1c"
+  ]
 
+  public_subnets = [
+    "10.0.101.0/24",
+    "10.0.102.0/24",
+    "10.0.103.0/24"
+  ]
+
+  map_public_ip_on_launch = true
+
+  enable_dns_support   = true
+  enable_dns_hostnames = true
 
   tags = {
-    Terraform = "true"
+    Terraform   = "true"
+    Environment = "dev"
+    Project     = "terraform-iam-lab"
+  }
+}
+
+resource "aws_security_group" "sk_ec2_sg" {
+  name        = "sk-iam-ec2-sg"
+  description = "Security group for the IAM and EC2 Terraform lab"
+  vpc_id      = module.sk_vpc.vpc_id
+
+  # No inbound access is required because the instance
+  # will be managed through AWS Systems Manager.
+
+  egress {
+    description = "Allow outbound access for AWS Systems Manager"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "sk-iam-ec2-sg"
+    Terraform   = "true"
     Environment = "dev"
   }
 }
 
-module "sk_sg" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "4.13.0"
+resource "aws_instance" "sk_iam_instance" {
+  ami           = data.aws_ami.app_ami.id
+  instance_type = var.instance_type
 
-  vpc_id  = module.sk_vpc.vpc_id
-  name    = "sk"
-  ingress_rules = ["https-443-tcp","http-80-tcp"]
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-  egress_rules = ["all-all"]
-  egress_cidr_blocks = ["0.0.0.0/0"]
-}
+  subnet_id = module.sk_vpc.public_subnets[0]
 
-module "sk_autoscaling" {
-  source  = "terraform-aws-modules/autoscaling/aws"
-  version = "8.3.1"
-
-  name = "sk"
-
-  min_size            = 2
-  max_size            = 10
-  desired_capacity    = 2
-  vpc_zone_identifier = module.sk_vpc.public_subnets
-
-  security_groups = [module.sk_sg.security_group_id]
-  instance_type   = var.instance_type
-  image_id        = data.aws_ami.app_ami.id
-}
-
-resource "aws_autoscaling_attachment" "sk_alb" {
-  autoscaling_group_name = module.sk_autoscaling.autoscaling_group_name
-  lb_target_group_arn    = module.sk_alb.target_group_arns[0]
-}
-
-module "sk_alb" {
-  source  = "terraform-aws-modules/alb/aws"
-  version = "6.10.0"
-
-  name = "sk-alb"
-
-  load_balancer_type = "application"
-
-  vpc_id             = module.sk_vpc.vpc_id
-  subnets            = module.sk_vpc.public_subnets
-  security_groups    = [module.sk_sg.security_group_id]
-
-  target_groups = [
-    {
-      name_prefix      = "sk-"
-      backend_protocol = "HTTP"
-      backend_port     = 80
-      target_type      = "instance"
-    }
+  vpc_security_group_ids = [
+    aws_security_group.sk_ec2_sg.id
   ]
 
-  http_tcp_listeners = [
-    {
-      port               = 80
-      protocol           = "HTTP"
-      target_group_index = 0
+  associate_public_ip_address = true
+
+  iam_instance_profile = aws_iam_instance_profile.sk_ec2_profile.name
+
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+  }
+
+  root_block_device {
+    volume_type           = "gp3"
+    volume_size           = 8
+    encrypted             = true
+    delete_on_termination = true
+
+    tags = {
+      Name        = "sk-iam-root-volume"
+      Environment = "dev"
     }
-  ]
+  }
 
   tags = {
+    Name        = "sk-iam-ec2-instance"
+    Terraform   = "true"
     Environment = "dev"
+    Purpose     = "IAM role and instance profile demonstration"
   }
 }
