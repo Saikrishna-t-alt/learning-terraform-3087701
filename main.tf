@@ -79,4 +79,12 @@ resource "aws_instance" "sk_iam_instance" {
   associate_public_ip_address = true
 
   iam_instance_profile = aws_iam_instance_profile.sk_ec2_profile.name
+
+  tags = {
+    Name        = "sk-iam-ec2-instance"
+    Terraform   = "true"
+    Environment = "dev"
+    Purpose     = "IAM role and instance profile demonstration"
+    StateTest   = "version-1"
+  }
 }
