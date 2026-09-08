@@ -51,9 +51,6 @@ resource "aws_security_group" "sk_ec2_sg" {
   description = "Security group for the IAM and EC2 Terraform lab"
   vpc_id      = module.sk_vpc.vpc_id
 
-  # No inbound access is required because the instance
-  # will be managed through AWS Systems Manager.
-
   egress {
     description = "Allow outbound access for AWS Systems Manager"
     from_port   = 0
@@ -82,28 +79,4 @@ resource "aws_instance" "sk_iam_instance" {
   associate_public_ip_address = true
 
   iam_instance_profile = aws_iam_instance_profile.sk_ec2_profile.name
-
-  metadata_options {
-    http_endpoint = "enabled"
-    http_tokens   = "required"
-  }
-
-  root_block_device {
-    volume_type           = "gp3"
-    volume_size           = 8
-    encrypted             = true
-    delete_on_termination = true
-
-    tags = {
-      Name        = "sk-iam-root-volume"
-      Environment = "dev"
-    }
-  }
-
-  tags = {
-    Name        = "sk-iam-ec2-instance"
-    Terraform   = "true"
-    Environment = "dev"
-    Purpose     = "IAM role and instance profile demonstration"
-  }
 }
